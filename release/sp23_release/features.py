@@ -332,7 +332,27 @@ class MOPSFeatureDescriptor(FeatureDescriptor):
             # helper functions that might be useful
             # Note: use grayImage to compute features on, not the input image
             # TODO-BLOCK-BEGIN
-            raise Exception("TODO in features.py not implemented")
+            x, y = int(f.pt[0]), int(f.pt[1])
+
+            T1 = transformations.get_trans_mx(np.array([-x, -y, 0]))
+            # print(T1)
+
+            # only need the left three rows?
+            z = math.pi/2  # arbitrary number -- need to find the keypoint orientation z of the point
+            R = transformations.get_rot_mx(0, 0, z)
+            # print(R)
+
+            # only need the top two rows
+            S = transformations.get_scale_mx(5, 5, 0)
+            # print(S)
+
+            T2 = transformations.get_trans_mx(np.array([4, 4, 0]))
+            # print(T2)
+
+            trans = T2*S*R*T1
+            # print(trans)
+
+            transMx = trans[:2, :3]
             # TODO-BLOCK-END
 
             # Call the warp affine function to do the mapping
