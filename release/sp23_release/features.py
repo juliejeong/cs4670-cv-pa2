@@ -9,9 +9,10 @@ import transformations
 
 ## Helper functions ############################################################
 
+
 def inbounds(shape, indices):
     '''
-        Input:
+        Input:pip install numpy scipy matplotlib Pillow opencv-python
             shape -- int tuple containing the shape of the array
             indices -- int list containing the indices we are trying 
                        to access within the array
@@ -83,14 +84,94 @@ class HarrisKeypointDetector(KeypointDetector):
         '''
         height, width = srcImage.shape[:2]
 
+        # print(height, width)
+
         harrisImage = np.zeros(srcImage.shape[:2])
         orientationImage = np.zeros(srcImage.shape[:2])
 
         # TODO 1: Compute the harris corner strength for 'srcImage' at
-        # each pixel and store in 'harrisImage'. Also compute an 
+        # each pixel and store in 'harrisImage'. Also compute an
         # orientation for each pixel and store it in 'orientationImage.'
         # TODO-BLOCK-BEGIN
-        raise Exception("TODO in features.py not implemented")
+        Ix = ndimage.sobel(srcImage, axis=1, mode='nearest')
+        Iy = ndimage.sobel(srcImage, axis=0, mode='nearest')
+
+        # print(Ix.shape)
+        # print(Iy.shape)
+
+        orientationImage = np.degrees(np.arctan2(Iy, Ix))
+
+        Ix2 = Ix*Ix
+        Iy2 = Iy*Iy
+        IxIy = Ix*Iy
+
+        # print(Ix2.shape)
+        # print(Iy2.shape)
+        # print(IxIy.shape)
+
+        # Ix2 = np.pad(Ix2, 2, mode='edge')
+        # Iy2 = np.pad(Iy2, 2, mode='edge')
+        # IxIy = np.pad(IxIy, 2, mode='edge')
+
+        # print(Ix2.shape)
+        # print(Iy2.shape)
+        # print(IxIy.shape)
+
+        Wx2 = ndimage.gaussian_filter(Ix2, sigma=0.5, mode='nearest')
+        Wy2 = ndimage.gaussian_filter(Iy2, sigma=0.5, mode='nearest')
+        Wxy = ndimage.gaussian_filter(IxIy, sigma=0.5, mode='nearest')
+
+        # print(Wx2.shape)
+        # print(Wy2.shape)
+        # print(Wxy.shape)
+
+        H00 = ndimage.convolve(Ix2, Wx2)
+        H01 = ndimage.convolve(IxIy, Wxy)
+        H11 = ndimage.convolve(Iy2, Wy2)
+
+        H00 = np.pad(H00, 2, mode='edge')
+        H01 = np.pad(H01, 2, mode='edge')
+        H11 = np.pad(H11, 2, mode='edge')
+
+        # print(H00.shape)
+        # print(H01.shape)
+        # print(H11.shape)
+
+        # H = np.zeros((height, width))
+        for y in range(height):
+            for x in range(width):
+                # print(y, x)
+                h00, h01, h10, h11 = 0, 0, 0, 0
+                # (x,y) the current pixel coordinates
+
+                # h00 = np.sum(ndimage.convolve(
+                #     Ix2[x-2:x+3][y-2:y+3], wIx2[x-2:x+3][y-2:y+3]))
+                # h01 = np.sum(ndimage.convolve(
+                #     IxIy[x-2:x+3][y-2:y+3], wIxIy[x-2:x+3][y-2:y+3]))
+                # h10 = h01
+                # h11 = np.sum(ndimage.convolve(
+                #     Iy2[x-2:x+3][y-2:y+3], wIy2[x-2:x+3][y-2:y+3]))
+
+                # H[x, y] = [[h00, h01], [h10, h11]]
+
+                h00 = np.sum(H00[y:y+5, x:x+5])
+                h01 = np.sum(H01[y:y+5, x:x+5])
+                h10 = h01
+                h11 = np.sum(H11[y:y+5, x:x+5])
+
+                H = [[h00, h01], [h10, h11]]
+                # c(H) = det(H) − 0.1(trace(H))^2.
+                detH = np.linalg.det(H)
+                traceH = np.trace(H)
+                cH = detH - 0.1 * (traceH ** 2)
+
+                harrisImage[y, x] = cH
+                # orientationImage[y, x] = np.arctan2(
+                #     Iy[y+2][x+2], Ix[y+2][x+2]) * 180.0 / np.pi
+                # h00 += w[m,n]*Ix[m,n]**2
+
+                # H[x,y] = [[h00, h01],[h10, h11]]
+
         # TODO-BLOCK-END
 
         return harrisImage, orientationImage
@@ -106,11 +187,14 @@ class HarrisKeypointDetector(KeypointDetector):
                          the pixel value is the local maxima in
                          its 7x7 neighborhood.
         '''
-        destImage = np.zeros_like(harrisImage, np.bool)
+        destImage = np.zeros_like(harrisImage, np.bool_)
 
         # TODO 2: Compute the local maxima image
         # TODO-BLOCK-BEGIN
-        raise Exception("TODO in features.py not implemented")
+        local_maxima = ndimage.maximum_filter(
+            harrisImage, size=7, mode='constant')
+        destImage = (harrisImage == local_maxima)
+        return destImage
         # TODO-BLOCK-END
 
         return destImage
@@ -157,7 +241,10 @@ class HarrisKeypointDetector(KeypointDetector):
                 # f.angle to the orientation in degrees and f.response to
                 # the Harris score
                 # TODO-BLOCK-BEGIN
-                raise Exception("TODO in features.py not implemented")
+                f.size = 10
+                f.pt = x, y
+                f.angle = orientationImage[y, x]
+                f.response = harrisImage[y, x]
                 # TODO-BLOCK-END
 
                 features.append(f)
@@ -169,8 +256,6 @@ class ORBKeypointDetector(KeypointDetector):
     def detectKeypoints(self, image):
         detector = cv2.ORB_create()
         return detector.detect(image)
-
-
 
 
 ## Feature descriptors #########################################################
@@ -247,7 +332,7 @@ class MOPSFeatureDescriptor(FeatureDescriptor):
             # Call the warp affine function to do the mapping
             # It expects a 2x3 matrix
             destImage = cv2.warpAffine(grayImage, transMx,
-                (windowSize, windowSize), flags=cv2.INTER_LINEAR)
+                                       (windowSize, windowSize), flags=cv2.INTER_LINEAR)
 
             # TODO 6: Normalize the descriptor to have zero mean and unit
             # variance. If the variance is negligibly small (which we
@@ -268,8 +353,6 @@ class ORBFeatureDescriptor(KeypointDetector):
             desc = np.zeros((0, 128))
 
         return desc
-
-
 
 
 ## Feature matchers ############################################################
@@ -306,7 +389,7 @@ class FeatureMatcher(object):
         d = h[6]*x + h[7]*y + h[8]
 
         return np.array([(h[0]*x + h[1]*y + h[2]) / d,
-            (h[3]*x + h[4]*y + h[5]) / d])
+                         (h[3]*x + h[4]*y + h[5]) / d])
 
 
 class SSDFeatureMatcher(FeatureMatcher):
