@@ -194,7 +194,6 @@ class HarrisKeypointDetector(KeypointDetector):
         local_maxima = ndimage.maximum_filter(
             harrisImage, size=7, mode='constant')
         destImage = (harrisImage == local_maxima)
-        return destImage
         # TODO-BLOCK-END
 
         return destImage
@@ -281,6 +280,9 @@ class SimpleFeatureDescriptor(FeatureDescriptor):
         grayImage = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         desc = np.zeros((len(keypoints), 5 * 5))
 
+        # added outside of todo 4 to add paddings, delete if this is a problem
+        paddedGrayImage = np.pad(grayImage, 2)
+
         for i, f in enumerate(keypoints):
             x, y = int(f.pt[0]), int(f.pt[1])
 
@@ -289,7 +291,11 @@ class SimpleFeatureDescriptor(FeatureDescriptor):
             # as a row-major vector. Treat pixels outside the image as zero.
             # Note: use grayImage to compute features on, not the input image
             # TODO-BLOCK-BEGIN
-            raise Exception("TODO in features.py not implemented")
+
+            arr = paddedGrayImage[y:y+5, x:x+5]
+
+            desc[i] = arr.flatten()
+
             # TODO-BLOCK-END
 
         return desc
