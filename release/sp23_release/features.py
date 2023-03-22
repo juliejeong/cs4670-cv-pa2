@@ -96,81 +96,47 @@ class HarrisKeypointDetector(KeypointDetector):
         Ix = ndimage.sobel(srcImage, axis=1, mode='nearest')
         Iy = ndimage.sobel(srcImage, axis=0, mode='nearest')
 
-        # print(Ix.shape)
-        # print(Iy.shape)
-
         orientationImage = np.degrees(np.arctan2(Iy, Ix))
 
         Ix2 = Ix*Ix
         Iy2 = Iy*Iy
         IxIy = Ix*Iy
 
-        # print(Ix2.shape)
-        # print(Iy2.shape)
-        # print(IxIy.shape)
-
         # Ix2 = np.pad(Ix2, 2, mode='edge')
         # Iy2 = np.pad(Iy2, 2, mode='edge')
         # IxIy = np.pad(IxIy, 2, mode='edge')
-
-        # print(Ix2.shape)
-        # print(Iy2.shape)
-        # print(IxIy.shape)
 
         Wx2 = ndimage.gaussian_filter(Ix2, sigma=0.5, mode='nearest')
         Wy2 = ndimage.gaussian_filter(Iy2, sigma=0.5, mode='nearest')
         Wxy = ndimage.gaussian_filter(IxIy, sigma=0.5, mode='nearest')
 
-        # print(Wx2.shape)
-        # print(Wy2.shape)
-        # print(Wxy.shape)
+        harrisImage = Wx2*Wy2 - Wxy*Wxy - 0.1*(Wx2+Wy2)*(Wx2+Wy2)
 
-        H00 = ndimage.convolve(Ix2, Wx2)
-        H01 = ndimage.convolve(IxIy, Wxy)
-        H11 = ndimage.convolve(Iy2, Wy2)
+        # H00 = ndimage.convolve(Ix2, Wx2)
+        # H01 = ndimage.convolve(IxIy, Wxy)
+        # H11 = ndimage.convolve(Iy2, Wy2)
 
-        H00 = np.pad(H00, 2, mode='edge')
-        H01 = np.pad(H01, 2, mode='edge')
-        H11 = np.pad(H11, 2, mode='edge')
+        # # H00 = np.pad(H00, 2, mode='edge')
+        # # H01 = np.pad(H01, 2, mode='edge')
+        # # H11 = np.pad(H11, 2, mode='edge')
 
-        # print(H00.shape)
-        # print(H01.shape)
-        # print(H11.shape)
+        # for y in range(height):
+        #     for x in range(width):
+        #         # print(y, x)
+        #         h00, h01, h10, h11 = 0, 0, 0, 0
 
-        # H = np.zeros((height, width))
-        for y in range(height):
-            for x in range(width):
-                # print(y, x)
-                h00, h01, h10, h11 = 0, 0, 0, 0
-                # (x,y) the current pixel coordinates
+        #         h00 = np.sum(H00[y:y+5, x:x+5])
+        #         h01 = np.sum(H01[y:y+5, x:x+5])
+        #         h10 = h01
+        #         h11 = np.sum(H11[y:y+5, x:x+5])
 
-                # h00 = np.sum(ndimage.convolve(
-                #     Ix2[x-2:x+3][y-2:y+3], wIx2[x-2:x+3][y-2:y+3]))
-                # h01 = np.sum(ndimage.convolve(
-                #     IxIy[x-2:x+3][y-2:y+3], wIxIy[x-2:x+3][y-2:y+3]))
-                # h10 = h01
-                # h11 = np.sum(ndimage.convolve(
-                #     Iy2[x-2:x+3][y-2:y+3], wIy2[x-2:x+3][y-2:y+3]))
+        #         H = [[h00, h01], [h10, h11]]
+        #         # c(H) = det(H) − 0.1(trace(H))^2.
+        #         detH = np.linalg.det(H)
+        #         traceH = np.trace(H)
+        #         cH = detH - 0.1 * (traceH ** 2)
 
-                # H[x, y] = [[h00, h01], [h10, h11]]
-
-                h00 = np.sum(H00[y:y+5, x:x+5])
-                h01 = np.sum(H01[y:y+5, x:x+5])
-                h10 = h01
-                h11 = np.sum(H11[y:y+5, x:x+5])
-
-                H = [[h00, h01], [h10, h11]]
-                # c(H) = det(H) − 0.1(trace(H))^2.
-                detH = np.linalg.det(H)
-                traceH = np.trace(H)
-                cH = detH - 0.1 * (traceH ** 2)
-
-                harrisImage[y, x] = cH
-                # orientationImage[y, x] = np.arctan2(
-                #     Iy[y+2][x+2], Ix[y+2][x+2]) * 180.0 / np.pi
-                # h00 += w[m,n]*Ix[m,n]**2
-
-                # H[x,y] = [[h00, h01],[h10, h11]]
+        #         harrisImage[y, x] = cH
 
         # TODO-BLOCK-END
 
