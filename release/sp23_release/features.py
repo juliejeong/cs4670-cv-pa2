@@ -247,7 +247,7 @@ class SimpleFeatureDescriptor(FeatureDescriptor):
         desc = np.zeros((len(keypoints), 5 * 5))
 
         # added outside of todo 4 to add paddings, delete if this is a problem
-        paddedGrayImage = np.pad(grayImage, 2)
+        # paddedGrayImage = np.pad(grayImage, 2)
 
         for i, f in enumerate(keypoints):
             x, y = int(f.pt[0]), int(f.pt[1])
@@ -258,9 +258,13 @@ class SimpleFeatureDescriptor(FeatureDescriptor):
             # Note: use grayImage to compute features on, not the input image
             # TODO-BLOCK-BEGIN
 
-            arr = paddedGrayImage[y:y+5, x:x+5]
-
-            desc[i] = arr.flatten()
+            # arr = paddedGrayImage[y:y+5, x:x+5]
+            # desc[i] = arr.flatten()
+            for m in range(-2,3):
+                for n in range(-2,3):
+                    #check if the pixel coordinates are within  image bounds before accessing them
+                    if x+m >= 0 and x+m < image.shape[1] and y+n >= 0 and y+n < image.shape[0]:
+                        desc[i, 5 * (n + 2) + (m + 2)] = grayImage[y + n, x + m]
 
             # TODO-BLOCK-END
 
