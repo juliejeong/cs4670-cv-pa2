@@ -367,7 +367,16 @@ class MOPSFeatureDescriptor(FeatureDescriptor):
             # define as less than 1e-10) then set the descriptor
             # vector to zero. Lastly, write the vector to desc.
             # TODO-BLOCK-BEGIN
-            raise Exception("TODO in features.py not implemented")
+            mean = np.mean(destImage)
+            destImage = destImage - mean
+            std = np.std(destImage)
+
+            if std > 1e-10:
+                destImage = destImage / std
+            else:
+                destImage = np.zeros_like(destImage)
+
+            desc = destImage.flatten()
             # TODO-BLOCK-END
 
         return desc
