@@ -336,12 +336,13 @@ class MOPSFeatureDescriptor(FeatureDescriptor):
 
             T1 = transformations.get_trans_mx(np.array([-x, -y, 0]))
 
-            z = f.angle / 180.0 * np.pi  # arbitrary number -- need to find the keypoint orientation z of the point
+            # / 180.0 * np.pi  # arbitrary number -- need to find the keypoint orientation z of the point
+            z = np.radians(f.angle)
             R = transformations.get_rot_mx(0, 0, -z)
 
             # only need the top two rows
             # S = transformations.get_scale_mx(5, 5, 0)
-            S = transformations.get_scale_mx(1./5, 1./5, 1) #lec 14
+            S = transformations.get_scale_mx(1./5, 1./5, 1)  # lec 14
             # print(S)
 
             T2 = transformations.get_trans_mx(np.array([4, 4, 0]))
@@ -354,7 +355,8 @@ class MOPSFeatureDescriptor(FeatureDescriptor):
             # trans = T2*S*R*T1
             # print(trans)
 
-            transMx[:, 2] = trans[:2, :3]
+            transMx[:, :2] = trans[:2, :2]
+            transMx[:, 2] = trans[:2, 3]
             # TODO-BLOCK-END
 
             # Call the warp affine function to do the mapping
