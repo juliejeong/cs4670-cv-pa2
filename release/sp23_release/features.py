@@ -303,8 +303,8 @@ class MOPSFeatureDescriptor(FeatureDescriptor):
             T1 = transformations.get_trans_mx(np.array([-x, -y, 0]))
 
             # / 180.0 * np.pi  # arbitrary number -- need to find the keypoint orientation z of the point
-            z = np.radians(f.angle)
-            R = transformations.get_rot_mx(0, 0, -z)
+            z = np.radians(-f.angle)
+            R = transformations.get_rot_mx(0, 0, z)
 
             # only need the top two rows
             # S = transformations.get_scale_mx(5, 5, 0)
@@ -314,15 +314,19 @@ class MOPSFeatureDescriptor(FeatureDescriptor):
             T2 = transformations.get_trans_mx(np.array([4, 4, 0]))
             # print(T2)
 
-            trans = np.dot(R, T1)
-            trans = np.dot(S, trans)
-            trans = np.dot(T2, trans)
+            trans = np.matmul(R, T1)
+            trans = np.matmul(S, trans)
+            trans = np.matmul(T2, trans)
+
+            # trans = T2 @ (S @ (R @ T1))
 
             # trans = T2*S*R*T1
             # print(trans)
 
             transMx[:, :2] = trans[:2, :2]
             transMx[:, 2] = trans[:2, 3]
+
+            # transMx = np.delete(trans[:2, :], 2, 1)
             # TODO-BLOCK-END
 
             # Call the warp affine function to do the mapping
@@ -335,16 +339,17 @@ class MOPSFeatureDescriptor(FeatureDescriptor):
             # define as less than 1e-10) then set the descriptor
             # vector to zero. Lastly, write the vector to desc.
             # TODO-BLOCK-BEGIN
+            destImage = destImage.flatten()
             mean = np.mean(destImage)
             destImage = destImage - mean
             std = np.std(destImage)
 
-            if std > 1e-10:
+            if std**2 >= 1e-10:
                 destImage = destImage / std
             else:
                 destImage = np.zeros_like(destImage)
 
-            desc = destImage.flatten()
+            desc[i] = destImage
             # TODO-BLOCK-END
 
         return desc
