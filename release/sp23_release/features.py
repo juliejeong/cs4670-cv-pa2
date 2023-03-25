@@ -102,41 +102,11 @@ class HarrisKeypointDetector(KeypointDetector):
         Iy2 = Iy*Iy
         IxIy = Ix*Iy
 
-        # Ix2 = np.pad(Ix2, 2, mode='edge')
-        # Iy2 = np.pad(Iy2, 2, mode='edge')
-        # IxIy = np.pad(IxIy, 2, mode='edge')
-
         Wx2 = ndimage.gaussian_filter(Ix2, sigma=0.5, mode='nearest')
         Wy2 = ndimage.gaussian_filter(Iy2, sigma=0.5, mode='nearest')
         Wxy = ndimage.gaussian_filter(IxIy, sigma=0.5, mode='nearest')
 
         harrisImage = Wx2*Wy2 - Wxy*Wxy - 0.1*(Wx2+Wy2)*(Wx2+Wy2)
-
-        # H00 = ndimage.convolve(Ix2, Wx2)
-        # H01 = ndimage.convolve(IxIy, Wxy)
-        # H11 = ndimage.convolve(Iy2, Wy2)
-
-        # # H00 = np.pad(H00, 2, mode='edge')
-        # # H01 = np.pad(H01, 2, mode='edge')
-        # # H11 = np.pad(H11, 2, mode='edge')
-
-        # for y in range(height):
-        #     for x in range(width):
-        #         # print(y, x)
-        #         h00, h01, h10, h11 = 0, 0, 0, 0
-
-        #         h00 = np.sum(H00[y:y+5, x:x+5])
-        #         h01 = np.sum(H01[y:y+5, x:x+5])
-        #         h10 = h01
-        #         h11 = np.sum(H11[y:y+5, x:x+5])
-
-        #         H = [[h00, h01], [h10, h11]]
-        #         # c(H) = det(H) − 0.1(trace(H))^2.
-        #         detH = np.linalg.det(H)
-        #         traceH = np.trace(H)
-        #         cH = detH - 0.1 * (traceH ** 2)
-
-        #         harrisImage[y, x] = cH
 
         # TODO-BLOCK-END
 
@@ -246,9 +216,6 @@ class SimpleFeatureDescriptor(FeatureDescriptor):
         grayImage = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         desc = np.zeros((len(keypoints), 5 * 5))
 
-        # added outside of todo 4 to add paddings, delete if this is a problem
-        # paddedGrayImage = np.pad(grayImage, 2)
-
         for i, f in enumerate(keypoints):
             x, y = int(f.pt[0]), int(f.pt[1])
 
@@ -258,13 +225,12 @@ class SimpleFeatureDescriptor(FeatureDescriptor):
             # Note: use grayImage to compute features on, not the input image
             # TODO-BLOCK-BEGIN
 
-            # arr = paddedGrayImage[y:y+5, x:x+5]
-            # desc[i] = arr.flatten()
-            for m in range(-2,3):
-                for n in range(-2,3):
-                    #check if the pixel coordinates are within  image bounds before accessing them
+            for m in range(-2, 3):
+                for n in range(-2, 3):
+                    # check if the pixel coordinates are within  image bounds before accessing them
                     if x+m >= 0 and x+m < image.shape[1] and y+n >= 0 and y+n < image.shape[0]:
-                        desc[i, 5 * (n + 2) + (m + 2)] = grayImage[y + n, x + m]
+                        desc[i, 5 * (n + 2) + (m + 2)
+                             ] = grayImage[y + n, x + m]
 
             # TODO-BLOCK-END
 
@@ -306,31 +272,20 @@ class MOPSFeatureDescriptor(FeatureDescriptor):
 
             T1 = transformations.get_trans_mx(np.array([-x, -y, 0]))
 
-            # / 180.0 * np.pi  # arbitrary number -- need to find the keypoint orientation z of the point
             z = np.radians(-f.angle)
             R = transformations.get_rot_mx(0, 0, z)
 
-            # only need the top two rows
-            # S = transformations.get_scale_mx(5, 5, 0)
             S = transformations.get_scale_mx(1./5, 1./5, 1)  # lec 14
-            # print(S)
 
             T2 = transformations.get_trans_mx(np.array([4, 4, 0]))
-            # print(T2)
 
             trans = np.matmul(R, T1)
             trans = np.matmul(S, trans)
             trans = np.matmul(T2, trans)
 
-            # trans = T2 @ (S @ (R @ T1))
-
-            # trans = T2*S*R*T1
-            # print(trans)
-
             transMx[:, :2] = trans[:2, :2]
             transMx[:, 2] = trans[:2, 3]
 
-            # transMx = np.delete(trans[:2, :], 2, 1)
             # TODO-BLOCK-END
 
             # Call the warp affine function to do the mapping
@@ -437,7 +392,25 @@ class SSDFeatureMatcher(FeatureMatcher):
         # Note: multiple features from the first image may match the same
         # feature in the second image.
         # TODO-BLOCK-BEGIN
-        raise Exception("TODO in features.py not implemented")
+        matches = []
+
+        for i, d1 in enumerate(desc1):
+            best_match_idx = -1
+            best_match_dist = -1
+
+            for j, d2 in enumerate(desc2):
+                dist = np.sqrt(np.sum((d1 - d2) ** 2))
+
+                if best_match_dist < 0 or dist < best_match_dist:
+                    best_match_dist = dist
+                    best_match_idx = j
+
+            cur_match = cv2.DMatch()
+            cur_match.queryIdx = i
+            cur_match.trainIdx = best_match_idx
+            cur_match.distance = best_match_dist
+
+            matches.append(cur_match)
         # TODO-BLOCK-END
 
         return matches
