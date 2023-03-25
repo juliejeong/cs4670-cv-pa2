@@ -450,7 +450,35 @@ class RatioFeatureMatcher(FeatureMatcher):
         # Note: multiple features from the first image may match the same
         # feature in the second image.
         # TODO-BLOCK-BEGIN
-        raise Exception("TODO in features.py not implemented")
+
+        matches = []
+        numkp1 = desc1.shape[0]
+        numkp2 = desc2.shape[0]
+        
+        if numkp1 < 2 or numkp2 < 2:
+            return matches #not possible to do any matching with less than two features
+
+        for i, d1 in enumerate(desc1):
+            distance1, distance2 = -1, -1
+            y_index = -1
+
+            for j, d2 in enumerate(desc2):
+                distance = np.sqrt(np.sum((d1 - d2)**2))
+
+                if distance < distance1 or distance1 < 0:
+                    distance2 = distance1
+                    distance1 = distance
+                    y_index = j
+                elif distance < distance2 or distance2 < 0:
+                    distance2 = distance
+
+            if distance1 < 1e-5:
+                distance1 = 1
+
+            cur = cv2.DMatch(i, y_index, distance1/distance2)
+            matches.append(cur)
+            
+            
         # TODO-BLOCK-END
 
         return matches
